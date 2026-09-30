@@ -1,0 +1,114 @@
+[
+  {
+    "warehouse": "东莞",
+    "variety_code": "Y01",
+    "variety_name": "油料",
+    "customer": "广州石化",
+    "unsold_qty": 110.5
+  },
+  {
+    "warehouse": "东莞",
+    "variety_code": "H01",
+    "variety_name": "热料",
+    "customer": "佛山塑料",
+    "unsold_qty": 85.0
+  },
+  {
+    "warehouse": "东莞",
+    "variety_code": "C01",
+    "variety_name": "碳酸",
+    "customer": "深圳包装",
+    "unsold_qty": -12.0
+  },
+  {
+    "warehouse": "东莞",
+    "variety_code": "W01",
+    "variety_name": "水料",
+    "customer": "珠海饮料/中山制瓶",
+    "unsold_qty": 200.0
+  },
+  {
+    "warehouse": "黄埔",
+    "variety_code": "Y01",
+    "variety_name": "油料",
+    "customer": "广州石化",
+    "unsold_qty": 60.0
+  },
+  {
+    "warehouse": "黄埔",
+    "variety_code": "H01",
+    "variety_name": "热料",
+    "customer": "江门塑业",
+    "unsold_qty": 45.5
+  },
+  {
+    "warehouse": "黄埔",
+    "variety_code": "C01",
+    "variety_name": "碳酸",
+    "customer": "深圳包装",
+    "unsold_qty": 27.0
+  },
+  {
+    "warehouse": "黄埔",
+    "variety_code": "W01",
+    "variety_name": "水料",
+    "customer": "珠海饮料",
+    "unsold_qty": 90.0
+  },
+  {
+    "warehouse": "新会",
+    "variety_code": "Y01",
+    "variety_name": "油料",
+    "customer": "粤东贸易",
+    "unsold_qty": 18.0
+  },
+  {
+    "warehouse": "新会",
+    "variety_code": "H01",
+    "variety_name": "热料",
+    "customer": "粤东贸易",
+    "unsold_qty": -5.0
+  },
+  {
+    "warehouse": "新会",
+    "variety_code": "W01",
+    "variety_name": "水料",
+    "customer": "珠海饮料",
+    "unsold_qty": 120.0
+  },
+  {
+    "warehouse": "新会",
+    "variety_code": "新C01",
+    "variety_name": "新线碳酸",
+    "customer": "粤东贸易",
+    "unsold_qty": 22.0
+  },
+  {
+    "warehouse": "湛江",
+    "variety_code": "Y01",
+    "variety_name": "油料",
+    "customer": "海南塑业",
+    "unsold_qty": 75.0
+  },
+  {
+    "warehouse": "湛江",
+    "variety_code": "C01",
+    "variety_name": "碳酸",
+    "customer": "海南包装",
+    "unsold_qty": 30.0
+  },
+  {
+    "warehouse": "东莞",
+    "variety_code": "新W01",
+    "variety_name": "新线水料",
+    "customer": "珠海饮料",
+    "unsold_qty": 50.0
+  },
+  {
+    "warehouse": "黄埔",
+    "variety_code": "新W01",
+    "variety_name": "新线水料",
+    "customer": "中山制瓶",
+    "unsold_qty": 35.0
+  }
+]

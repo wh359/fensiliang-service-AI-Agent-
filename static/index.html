@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分量表服务 · 前端演示</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: "Microsoft YaHei", system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+    header { background: #1f2937; color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 18px; margin: 0; }
+    .pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #10b981; color: #fff; }
+    .pill.off { background: #ef4444; }
+    main { max-width: 980px; margin: 24px auto; padding: 0 16px; }
+    .card { background: #fff; border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .card h2 { font-size: 15px; margin: 0 0 12px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    label { font-size: 12px; color: #555; display: block; margin-bottom: 4px; }
+    input, select, textarea { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+    button { padding: 9px 16px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-size: 14px; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    button.gray { background: #6b7280; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px; margin: 12px 0 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    th, td { border: 1px solid #e5e7eb; padding: 7px 9px; text-align: left; }
+    th { background: #f9fafb; }
+    .neg { color: #dc2626; font-weight: 600; }
+    .hint { color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>分量表服务</h1>
+    <span id="health" class="pill off">连接中…</span>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>智能体对话（AI Agent）</h2>
+      <div class="row">
+        <input id="agent-input" placeholder="例如：我要33吨油料，从东莞发" style="flex:1; min-width:260px" onkeydown="if(event.key==='Enter')doAgent()">
+        <button onclick="doAgent()">发送</button>
+      </div>
+      <div id="agent-answer" style="margin-top:12px; white-space:pre-wrap"></div>
+      <pre id="agent-calls" hidden></pre>
+    </div>
+
+    <div class="card">
+      <h2>出库扣减</h2>
+      <div class="row">
+        <div>
+          <label>品种</label>
+          <select id="deduct-variety"></select>
+        </div>
+        <div>
+          <label>数量（吨）</label>
+          <input id="deduct-qty" type="number" step="0.1" value="33" style="width:110px">
+        </div>
+        <div>
+          <label>仓库（可选）</label>
+          <input id="deduct-warehouse" placeholder="留空则自动跨仓" style="width:150px">
+        </div>
+        <button onclick="doDeduct()">扣减</button>
+      </div>
+      <pre id="deduct-result" hidden></pre>
+    </div>
+
+    <div class="card">
+      <h2>查询</h2>
+      <div class="row">
+        <div>
+          <label>品种</label>
+          <select id="query-variety"></select>
+        </div>
+        <div>
+          <label>需求（吨，可选）</label>
+          <input id="query-qty" type="number" step="0.1" placeholder="可选" style="width:120px">
+        </div>
+        <div>
+          <label>仓库（可选）</label>
+          <input id="query-warehouse" placeholder="可选" style="width:150px">
+        </div>
+        <button onclick="doQuery()">查询</button>
+      </div>
+      <pre id="query-result" hidden></pre>
+    </div>
+
+    <div class="card">
+      <h2>全部记录</h2>
+      <div class="row">
+        <button onclick="doList()">加载记录</button>
+        <span class="hint">负数标红表示超卖</span>
+      </div>
+      <div id="records-table"></div>
+    </div>
+
+    <div class="card">
+      <h2>导入图片（OCR）</h2>
+      <div class="row">
+        <input id="image-file" type="file" accept="image/*">
+        <select id="ocr-kind">
+          <option value="easyocr">EasyOCR（本地）</option>
+          <option value="paddle">PaddleOCR（本地）</option>
+          <option value="cloud">云端视觉模型</option>
+        </select>
+        <button onclick="doImport()">上传并识别</button>
+      </div>
+      <pre id="import-result" hidden></pre>
+    </div>
+  </main>
+
+  <script>
+    async function api(path, options) {
+      const resp = await fetch(path, options);
+      const body = await resp.json();
+      return { status: resp.status, body };
+    }
+
+    function show(el, data) {
+      el.hidden = false;
+      el.textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function refreshVarieties() {
+      const { body } = await api('/api/varieties');
+      const list = body.ok ? body.data : [];
+      const html = list.map(v =>
+        `<option value="${v.code}">${v.code}（${v.name}，可售 ${v.available}）</option>`
+      ).join('');
+      document.getElementById('deduct-variety').innerHTML = html;
+      document.getElementById('query-variety').innerHTML = html;
+    }
+
+    async function doList() {
+      const { body } = await api('/api/records');
+      const records = body.ok ? body.data.records : [];
+      const rows = records.map(r => `
+        <tr>
+          <td>${r.warehouse}</td>
+          <td>${r.variety_code}（${r.variety_name}）</td>
+          <td>${r.customer}</td>
+          <td class="${r.unsold_qty < 0 ? 'neg' : ''}">${r.unsold_qty}</td>
+          <td>${r.oversold ? '超卖' : ''}</td>
+        </tr>`).join('');
+      document.getElementById('records-table').innerHTML = `
+        <table>
+          <thead><tr><th>库位</th><th>品种</th><th>客户</th><th>未下量(吨)</th><th>状态</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="5">暂无数据</td></tr>'}</tbody>
+        </table>`;
+    }
+
+    async function doQuery() {
+      const variety = document.getElementById('query-variety').value;
+      const qty = document.getElementById('query-qty').value;
+      const warehouse = document.getElementById('query-warehouse').value;
+      const params = new URLSearchParams({ variety });
+      if (qty) params.set('qty', qty);
+      if (warehouse) params.set('warehouse', warehouse);
+      const { body } = await api('/api/query?' + params.toString());
+      show(document.getElementById('query-result'), body);
+    }
+
+    async function doDeduct() {
+      const variety = document.getElementById('deduct-variety').value;
+      const qty = document.getElementById('deduct-qty').value;
+      const warehouse = document.getElementById('deduct-warehouse').value;
+      const payload = { variety, qty: Number(qty) };
+      if (warehouse) payload.warehouse = warehouse;
+      const { body } = await api('/api/deduct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      show(document.getElementById('deduct-result'), body);
+      if (body.ok) { await refreshVarieties(); await doList(); }
+    }
+
+    async function doImport() {
+      const fileInput = document.getElementById('image-file');
+      const file = fileInput.files[0];
+      if (!file) { alert('请先选择图片'); return; }
+      const base64 = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+      const ocr = document.getElementById('ocr-kind').value;
+      const { body } = await api('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: base64, filename: file.name, ocr }),
+      });
+      show(document.getElementById('import-result'), body);
+      if (body.ok) { await refreshVarieties(); await doList(); }
+    }
+
+    async function doAgent() {
+      const input = document.getElementById('agent-input');
+      const message = input.value.trim();
+      if (!message) { alert('请输入问题'); return; }
+      const answerEl = document.getElementById('agent-answer');
+      const callsEl = document.getElementById('agent-calls');
+      answerEl.textContent = '思考中…';
+      callsEl.hidden = true;
+      const { body } = await api('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      if (body.ok) {
+        answerEl.textContent = body.data.answer || '(无文字回复)';
+        if (body.data.tool_calls && body.data.tool_calls.length) {
+          callsEl.hidden = false;
+          callsEl.textContent = JSON.stringify(body.data.tool_calls, null, 2);
+        }
+        await refreshVarieties();
+        await doList();
+      } else {
+        answerEl.textContent = '出错了：' + body.error + '（code: ' + body.code + '）';
+      }
+    }
+
+    (async function init() {
+      try {
+        const { body } = await api('/api/health');
+        const pill = document.getElementById('health');
+        if (body.ok) { pill.textContent = '服务正常'; pill.classList.remove('off'); }
+        else { pill.textContent = '服务异常'; }
+        await refreshVarieties();
+        await doList();
+      } catch (e) {
+        document.getElementById('health').textContent = '无法连接';
+      }
+    })();
+  </script>
+</body>
+</html>
